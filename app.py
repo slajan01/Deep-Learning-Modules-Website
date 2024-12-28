@@ -1,6 +1,8 @@
 # Importing necessary modules
 from flask import Flask, render_template, request, jsonify
+from dotenv import load_dotenv
 import requests
+import os
 
 # Initializing Flask application
 app = Flask(__name__)
@@ -11,7 +13,8 @@ def home():
     return render_template('home.html')
 
 # Add your Hugging Face API key here
-HUGGINGFACE_API_KEY = "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"
+load_dotenv()
+HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 
 # Route for the chatbot module
 @app.route('/chatbot', methods=['GET', 'POST'])
