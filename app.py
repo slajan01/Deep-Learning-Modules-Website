@@ -1,11 +1,28 @@
 # Importing necessary modules
-from flask import Flask, render_template, request, jsonify
-from dotenv import load_dotenv
 import requests
 import os
+import numpy as np
+import base64
+import tensorflow as tf
+from flask import Flask, render_template, request, jsonify
+from dotenv import load_dotenv
+from tensorflow.keras.models import load_model
+from PIL import Image
+from io import BytesIO
 
 # Initializing Flask application
 app = Flask(__name__)
+
+# Load your pre-trained CNN model
+cnn_model = load_model('models/digit_recognizer.h5')  # Adjust path as needed
+
+def preprocess_image(image_data):
+    # Decode Base64 to a PIL image
+    image = Image.open(BytesIO(base64.b64decode(image_data.split(",")[1])))
+    image = image.resize((28, 28)).convert('L')  # Resize to 28x28 and convert to grayscale
+    image = np.array(image) / 255.0  # Normalize pixel values
+    image = np.expand_dims(image, axis=(0, -1))  # Add batch and channel dimensions
+    return image
 
 # Route for the homepage
 @app.route('/')
@@ -49,6 +66,25 @@ def chatbot():
 
         return jsonify({'response': bot_response})
     return render_template('chatbot.html')
+
+@app.route('/digit-recognizer', methods=['GET', 'POST'])
+def digit_recognizer():
+    if request.method == 'POST':
+        data = request.get_json()
+        image_data = data.get('image')
+        if not image_data:
+            return jsonify({'error': 'No image data provided'}), 400
+
+        # Preprocess the image and predict
+        try:
+            processed_image = preprocess_image(image_data)
+            prediction = cnn_model.predict(processed_image)
+            predicted_digit = np.argmax(prediction)
+            return jsonify({'digit': int(predicted_digit)})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    return render_template('digit_recognizer.html')
 
 # Main driver
 if __name__ == '__main__':

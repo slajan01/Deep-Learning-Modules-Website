@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digit Recognizer</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Digit Recognizer</h1>
+        <canvas id="digit-canvas" width="200" height="200" style="border: 1px solid black;"></canvas>
+        <br>
+        <button id="clear-btn">Clear</button>
+        <button id="submit-btn">Submit</button>
+        <p id="result"></p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('digit-canvas');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+
+        canvas.addEventListener('mousedown', () => drawing = true);
+        canvas.addEventListener('mouseup', () => drawing = false);
+        canvas.addEventListener('mousemove', draw);
+
+        function draw(event) {
+            if (!drawing) return;
+            const rect = canvas.getBoundingClientRect();
+            ctx.lineWidth = 10;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = 'black';
+            ctx.beginPath();
+            ctx.moveTo(event.clientX - rect.left, event.clientY - rect.top);
+            ctx.lineTo(event.clientX - rect.left, event.clientY - rect.top);
+            ctx.stroke();
+        }
+
+        document.getElementById('clear-btn').addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        document.getElementById('submit-btn').addEventListener('click', async () => {
+            const imageData = canvas.toDataURL('image/png');  // Get the canvas image as a Base64 string
+            const response = await fetch('/digit-recognizer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageData })
+            });
+            const result = await response.json();
+            document.getElementById('result').textContent = `Predicted Digit: ${result.digit}`;
+        });
+    </script>
+</body>
+</html>
