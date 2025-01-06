@@ -13,8 +13,12 @@ from io import BytesIO
 # Initializing Flask application
 app = Flask(__name__)
 
-# Load your pre-trained CNN model
-cnn_model = load_model('models/digit_recognizer.h5')  # Adjust path as needed
+# Load the model
+try:
+    cnn_model = load_model('models/digit_recognizer.h5')
+    print("Model loaded successfully!")
+except Exception as e:
+    print(f"Error loading model: {e}")
 
 def preprocess_image(image_data):
     # Decode Base64 to a PIL image
@@ -78,8 +82,10 @@ def digit_recognizer():
         # Preprocess the image and predict
         try:
             processed_image = preprocess_image(image_data)
+            print(f"Preprocessed image shape: {processed_image.shape}")
             prediction = cnn_model.predict(processed_image)
             predicted_digit = np.argmax(prediction)
+            print(f"Model prediction: {prediction}, Predicted digit: {predicted_digit}")
             return jsonify({'digit': int(predicted_digit)})
         except Exception as e:
             return jsonify({'error': str(e)}), 500
