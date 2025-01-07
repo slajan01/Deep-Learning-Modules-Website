@@ -7,7 +7,7 @@ import tensorflow as tf
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from tensorflow.keras.models import load_model
-from PIL import Image
+from PIL import Image, ImageOps
 from io import BytesIO
 
 # Initializing Flask application
@@ -21,11 +21,21 @@ except Exception as e:
     print(f"Error loading model: {e}")
 
 def preprocess_image(image_data):
+
     # Decode Base64 to a PIL image
     image = Image.open(BytesIO(base64.b64decode(image_data.split(",")[1])))
-    image = image.resize((28, 28)).convert('L')  # Resize to 28x28 and convert to grayscale
-    image = np.array(image) / 255.0  # Normalize pixel values
-    image = np.expand_dims(image, axis=(0, -1))  # Add batch and channel dimensions
+
+    # Resize to (28, 28) and convert to grayscale
+    image = image.resize((28, 28)).convert('L')
+
+    # Invert colors (black digits on white -> white digits on black)
+    image = ImageOps.invert(image)
+
+    # Normalize pixel values to [0, 1]
+    image = np.array(image).astype('float32') / 255.0
+
+    # Reshape to (1, 28, 28, 1) for the model
+    image = np.expand_dims(image, axis=(0, -1))
     return image
 
 # Route for the homepage
@@ -71,26 +81,36 @@ def chatbot():
         return jsonify({'response': bot_response})
     return render_template('chatbot.html')
 
+# Route for the digit recognizer module
 @app.route('/digit-recognizer', methods=['GET', 'POST'])
 def digit_recognizer():
+    if request.method == 'GET':
+        # Render the HTML template for the digit recognizer page
+        return render_template('digit_recognizer.html')
+
     if request.method == 'POST':
+        # Handle image data for prediction
         data = request.get_json()
         image_data = data.get('image')
+
         if not image_data:
             return jsonify({'error': 'No image data provided'}), 400
 
-        # Preprocess the image and predict
         try:
+            # Preprocess the image
             processed_image = preprocess_image(image_data)
             print(f"Preprocessed image shape: {processed_image.shape}")
+            print(f"Preprocessed image values (sample): {processed_image[0, :, :, 0]}")
+
+            # Predict using the model
             prediction = cnn_model.predict(processed_image)
-            predicted_digit = np.argmax(prediction)
+            predicted_digit = int(np.argmax(prediction))
             print(f"Model prediction: {prediction}, Predicted digit: {predicted_digit}")
-            return jsonify({'digit': int(predicted_digit)})
+
+            return jsonify({'digit': predicted_digit})
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
-    return render_template('digit_recognizer.html')
 
 # Main driver
 if __name__ == '__main__':
