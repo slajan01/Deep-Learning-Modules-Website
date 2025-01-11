@@ -21,36 +21,83 @@
         const ctx = canvas.getContext('2d');
         let drawing = false;
 
-        canvas.addEventListener('mousedown', () => drawing = true);
-        canvas.addEventListener('mouseup', () => drawing = false);
-        canvas.addEventListener('mousemove', draw);
+        // Initialize the canvas with a black background
+        function initializeCanvas() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        initializeCanvas();
 
+        // Function to start drawing
+        function startDrawing(event) {
+            drawing = true;
+            draw(event); // Draw the initial point
+        }
+
+        // Function to stop drawing
+        function stopDrawing() {
+            drawing = false;
+            ctx.beginPath();
+        }
+
+        // Function to handle the drawing
         function draw(event) {
             if (!drawing) return;
             const rect = canvas.getBoundingClientRect();
-            ctx.lineWidth = 10;
-            ctx.lineCap = 'round';
-            ctx.strokeStyle = 'black';
-            ctx.beginPath();
-            ctx.moveTo(event.clientX - rect.left, event.clientY - rect.top);
+            ctx.lineWidth = 10; // Line thickness
+            ctx.lineCap = 'round'; // Smooth stroke
+            ctx.strokeStyle = 'white'; // Drawing color
+
+            // Begin drawing the stroke
             ctx.lineTo(event.clientX - rect.left, event.clientY - rect.top);
             ctx.stroke();
+
+            // Begin a new path for continuous drawing
+            ctx.beginPath();
+            ctx.moveTo(event.clientX - rect.left, event.clientY - rect.top);
         }
 
+        // Attach event listeners for mouse actions
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mousemove', draw);
+
+        // Clear button functionality
         document.getElementById('clear-btn').addEventListener('click', () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            initializeCanvas(); // Reset to black background
         });
 
+        // Submit button functionality
         document.getElementById('submit-btn').addEventListener('click', async () => {
-            const imageData = canvas.toDataURL('image/png');  // Get the canvas image as a Base64 string
-            const response = await fetch('/digit-recognizer', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: imageData })
-            });
-            const result = await response.json();
-            document.getElementById('result').textContent = `Predicted Digit: ${result.digit}`;
+            const imageData = canvas.toDataURL('image/png'); // Get the canvas image as a Base64 string
+
+            // Debugging: Log the Base64 image string
+            console.log("Base64 Image Data:", imageData);
+
+            try {
+                const response = await fetch('/digit-recognizer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server responded with status ${response.status}`);
+                }
+
+                const result = await response.json();
+                if (result.digit !== undefined) {
+                    document.getElementById('result').textContent = `Predicted Digit: ${result.digit}`;
+                } else {
+                    document.getElementById('result').textContent = `Error: ${result.error || 'Unknown error occurred'}`;
+                }
+            } catch (error) {
+                console.error("Error during submission:", error);
+                document.getElementById('result').textContent = `Error: ${error.message}`;
+            }
         });
     </script>
 </body>
 </html>
+

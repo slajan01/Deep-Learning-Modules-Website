@@ -4,6 +4,7 @@ import os
 import numpy as np
 import base64
 import tensorflow as tf
+import cv2
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from tensorflow.keras.models import load_model
@@ -25,18 +26,48 @@ def preprocess_image(image_data):
     # Decode Base64 to a PIL image
     image = Image.open(BytesIO(base64.b64decode(image_data.split(",")[1])))
 
-    # Resize to (28, 28) and convert to grayscale
-    image = image.resize((28, 28)).convert('L')
+    # Ensure the transparent background is replaced with black
+    if image.mode != "RGBA":
+        image = image.convert("RGBA")
+    background = Image.new("RGBA", image.size, (0, 0, 0, 255))  # Black background
+    image = Image.alpha_composite(background, image)
 
-    # Invert colors (black digits on white -> white digits on black)
-    image = ImageOps.invert(image)
+    # Convert to grayscale
+    image = image.convert('L')
+    print(f"After grayscale conversion: {image.mode}")  # Debug: Check mode
 
-    # Normalize pixel values to [0, 1]
-    image = np.array(image).astype('float32') / 255.0
+    # Convert the image to a NumPy array
+    image_array = np.array(image)
 
-    # Reshape to (1, 28, 28, 1) for the model
-    image = np.expand_dims(image, axis=(0, -1))
-    return image
+    # Explicitly invert the pixel values
+    image_array = 255 - image_array
+    print(f"Pixel values after explicit inversion (sample): {image_array[:5, :5]}")
+
+    # Convert back to PIL Image for further processing
+    image = Image.fromarray(image_array)
+
+    # Save the explicitly inverted image for debugging
+    image.save("debug_explicitly_inverted_image.png")
+
+    # Find the bounding box of the digit
+    bbox = image.getbbox()
+    if bbox:
+        image = image.crop(bbox)
+
+    # Resize and center the digit
+    image = image.resize((20, 20), Image.Resampling.LANCZOS)
+    new_image = Image.new('L', (28, 28), 0)
+    new_image.paste(image, (4, 4))
+
+    # Save the processed image for debugging
+    new_image.save("debug_final_image_after_explicit_inversion.png")
+    print("Processed image saved for debugging.")
+
+    # Normalize the image
+    image_array = np.array(new_image).astype('float32') / 255.0
+    image_array = np.expand_dims(image_array, axis=(0, -1))
+
+    return image_array
 
 # Route for the homepage
 @app.route('/')
@@ -109,8 +140,9 @@ def digit_recognizer():
 
             return jsonify({'digit': predicted_digit})
         except Exception as e:
+            import traceback
+            traceback.print_exc()  # Log the full traceback for debugging
             return jsonify({'error': str(e)}), 500
-
 
 # Main driver
 if __name__ == '__main__':
