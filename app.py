@@ -34,37 +34,34 @@ def preprocess_image(image_data):
 
     # Convert to grayscale
     image = image.convert('L')
-    print(f"After grayscale conversion: {image.mode}")  # Debug: Check mode
 
-    # Convert the image to a NumPy array
+    # Convert to a NumPy array for explicit inversion
     image_array = np.array(image)
 
-    # Explicitly invert the pixel values
-    image_array = 255 - image_array
-    print(f"Pixel values after explicit inversion (sample): {image_array[:5, :5]}")
+    # Check if the image is already white on black
+    mean_pixel_value = np.mean(image_array)
+    if mean_pixel_value > 127:  # Image is black on white
+        image_array = 255 - image_array  # Explicit inversion to white on black
 
-    # Convert back to PIL Image for further processing
+    # Convert back to PIL Image after inversion
     image = Image.fromarray(image_array)
-
-    # Save the explicitly inverted image for debugging
-    image.save("debug_explicitly_inverted_image.png")
 
     # Find the bounding box of the digit
     bbox = image.getbbox()
     if bbox:
         image = image.crop(bbox)
 
-    # Resize and center the digit
+    # Resize the cropped digit to fit 20x20
     image = image.resize((20, 20), Image.Resampling.LANCZOS)
-    new_image = Image.new('L', (28, 28), 0)
-    new_image.paste(image, (4, 4))
 
-    # Save the processed image for debugging
-    new_image.save("debug_final_image_after_explicit_inversion.png")
-    print("Processed image saved for debugging.")
+    # Create a new 28x28 black image and paste the resized digit in the center
+    new_image = Image.new('L', (28, 28), 0)  # Black background
+    new_image.paste(image, (4, 4))  # Center the digit
 
-    # Normalize the image
+    # Normalize pixel values to [0, 1]
     image_array = np.array(new_image).astype('float32') / 255.0
+
+    # Reshape to (1, 28, 28, 1) for the model
     image_array = np.expand_dims(image_array, axis=(0, -1))
 
     return image_array
