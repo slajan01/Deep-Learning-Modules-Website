@@ -30,7 +30,7 @@ model = MobileNetV2(weights="imagenet")
 
 # Load the sentiment analysis pipeline
 sentiment_pipeline = pipeline(
-    "sentiment-analysis", model="prajjwal1/bert-mini"
+    "sentiment-analysis", model="prajjwal1/bert-mini", from_pt=True
 )
 
 # CUDA related warnings
