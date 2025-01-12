@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Classifier</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Image Classifier</h1>
+        <form id="upload-form" enctype="multipart/form-data">
+            <input type="file" id="image-upload" name="file" accept="image/*">
+            <button type="button" id="submit-btn">Classify Image</button>
+        </form>
+        <div id="result">
+            <p id="classification"></p>
+        </div>
+        <img id="uploaded-image" style="max-width: 300px; display: none;">
+    </div>
+
+    <script>
+        document.getElementById('submit-btn').addEventListener('click', async () => {
+            const form = document.getElementById('upload-form');
+            const formData = new FormData(form);
+            
+            const response = await fetch('/image-classifier', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result = await response.json();
+            document.getElementById('classification').textContent = `Prediction: ${result.label}`;
+            document.getElementById('uploaded-image').src = URL.createObjectURL(form.file.files[0]);
+            document.getElementById('uploaded-image').style.display = 'block';
+        });
+    </script>
+</body>
+</html>

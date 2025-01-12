@@ -8,6 +8,9 @@ import cv2
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from tensorflow.keras.models import load_model
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input, decode_predictions
+from tensorflow.keras.preprocessing import image
 from PIL import Image, ImageOps
 from io import BytesIO
 
@@ -20,6 +23,9 @@ try:
     print("Model loaded successfully!")
 except Exception as e:
     print(f"Error loading model: {e}")
+
+# Load pre-trained model
+model = MobileNetV2(weights="imagenet")
 
 def preprocess_image(image_data):
 
@@ -141,6 +147,39 @@ def digit_recognizer():
             traceback.print_exc()  # Log the full traceback for debugging
             return jsonify({'error': str(e)}), 500
 
+# Route for the image classifier module
+@app.route('/image-classifier', methods=['GET', 'POST'])
+def image_classifier():
+    if request.method == 'GET':
+        return render_template('image_classifier.html')
+    
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Save the file to a temporary location
+        filepath = os.path.join('static/uploads', file.filename)
+        file.save(filepath)
+        
+        # Preprocess the image
+        img = image.load_img(filepath, target_size=(224, 224))
+        img_array = image.img_to_array(img)
+        img_array = np.expand_dims(img_array, axis=0)
+        img_array = preprocess_input(img_array)
+
+        # Predict using the model
+        predictions = model.predict(img_array)
+        label = decode_predictions(predictions, top=1)[0][0][1]
+        
+        # Clean up the temporary file
+        os.remove(filepath)
+        
+        return jsonify({'label': label})
+    
 # Main driver
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 5000))  # Default to 5000 if PORT is not set
