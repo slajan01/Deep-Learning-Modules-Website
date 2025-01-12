@@ -29,7 +29,12 @@ except Exception as e:
 model = MobileNetV2(weights="imagenet")
 
 # Load the sentiment analysis pipeline
-sentiment_pipeline = pipeline("sentiment-analysis")
+sentiment_pipeline = pipeline(
+    "sentiment-analysis", model="prajjwal1/bert-mini"
+)
+
+# CUDA related warnings
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 def preprocess_image(image_data):
 
