@@ -5,6 +5,7 @@ import numpy as np
 import base64
 import tensorflow as tf
 import cv2
+from transformers import pipeline
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from tensorflow.keras.models import load_model
@@ -17,15 +18,18 @@ from io import BytesIO
 # Initializing Flask application
 app = Flask(__name__)
 
-# Load the model
+# Load the model for digit recognizer
 try:
     cnn_model = load_model('models/digit_recognizer.h5')
     print("Model loaded successfully!")
 except Exception as e:
     print(f"Error loading model: {e}")
 
-# Load pre-trained model
+# Load pre-trained model for image classification
 model = MobileNetV2(weights="imagenet")
+
+# Load the sentiment analysis pipeline
+sentiment_pipeline = pipeline("sentiment-analysis")
 
 def preprocess_image(image_data):
 
@@ -180,6 +184,27 @@ def image_classifier():
         
         return jsonify({'label': label})
     
+# Route for the sentiment analysis module
+@app.route('/sentiment-analysis', methods=['GET', 'POST'])
+def sentiment_analysis():
+    if request.method == 'GET':
+        return render_template('sentiment_analysis.html')
+
+    if request.method == 'POST':
+        data = request.get_json()
+        text = data.get('text', '')
+
+        if not text:
+            return jsonify({'error': 'No text provided'}), 400
+
+        try:
+            # Analyze sentiment
+            results = sentiment_pipeline(text)
+            sentiment = results[0]['label']  # Extract the sentiment label
+            return jsonify({'sentiment': sentiment})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+            
 # Main driver
 if __name__ == '__main__':
     port = int(os.getenv("PORT", 5000))  # Default to 5000 if PORT is not set

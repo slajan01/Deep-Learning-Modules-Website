@@ -1,76 +1,84 @@
 # Deep Learning Modules Website
 
-This repository hosts a collection of interactive deep learning modules, each accessible through a simple web interface. The modules demonstrate the practical applications of deep learning in various domains such as natural language processing and computer vision.
+This repository hosts a collection of interactive deep learning modules, deployed as a web application using Flask. Each module demonstrates a specific application of deep learning, accessible via a user-friendly interface.
 
-## Modules
+## Modules Available
 
-### 1. Chatbot
-- **Description**: A conversational chatbot powered by Hugging Face's `facebook/blenderbot-400M-distill` model. The chatbot can respond to text input and engage in basic conversations.
-- **Technology**: Hugging Face Transformers, Flask.
-- **How to Use**: Navigate to the Chatbot module, enter your text, and get a response from the chatbot.
+### 1. Chatbot Module
+- **Description**: An interactive chatbot capable of understanding and responding to user input.
+- **Technology**: Utilizes the Hugging Face `facebook/blenderbot-400M-distill` model for conversational AI.
+- **Features**:
+  - Accepts text input from users.
+  - Provides human-like conversational responses.
+- **How to Use**:
+  - Navigate to the Chatbot Module.
+  - Enter your query and click "Submit" to receive a response.
 
 ### 2. Digit Recognizer
-- **Description**: A handwritten digit recognition module powered by a Convolutional Neural Network (CNN). Users can draw a digit on a canvas, and the model predicts the digit.
-- **Technology**: TensorFlow, Flask, HTML5 Canvas for drawing interface.
-- **How to Use**: Navigate to the Digit Recognizer module, draw a digit on the canvas, and click submit to get the predicted digit.
+- **Description**: A digit recognition module that uses a Convolutional Neural Network (CNN) to identify handwritten digits.
+- **Technology**: Trained on the MNIST dataset, deployed with TensorFlow.
+- **Features**:
+  - Interactive canvas for users to draw a digit.
+  - Predicts the digit in real-time upon submission.
+- **How to Use**:
+  - Navigate to the Digit Recognizer.
+  - Draw a digit on the canvas and click "Submit" to see the prediction.
 
-## Requirements
+### 3. Image Classifier
+- **Description**: A module for classifying images into predefined categories using a pre-trained MobileNetV2 model.
+- **Technology**: Leverages TensorFlow's MobileNetV2 architecture.
+- **Features**:
+  - Upload an image to classify its content.
+  - Displays the predicted category along with confidence scores.
+- **How to Use**:
+  - Navigate to the Image Classifier.
+  - Upload an image file and click "Submit" to see the classification result.
 
-To run this project locally, ensure you have the following dependencies installed:
+### 4. Sentiment Analysis
+- **Description**: A sentiment analysis module that classifies text as positive, negative, or neutral.
+- **Technology**: Uses Hugging Face's `distilbert-base-uncased-finetuned-sst-2-english` model.
+- **Features**:
+  - Input text to analyze its sentiment.
+  - Returns the sentiment label (e.g., Positive, Negative, Neutral).
+- **How to Use**:
+  - Navigate to the Sentiment Analysis Module.
+  - Enter text in the provided field and click "Analyze" to see the sentiment.
 
-- Flask==3.1.0
-- keras==3.7.0
-- numpy==1.26.4
-- opencv-python==4.10.0.84
-- pillow==11.1.0
-- requests==2.32.3
-- tensorflow-cpu==2.18.0
-- python-dotenv==1.0.0
+## How to Run Locally
 
-Install the dependencies using:
-```bash
-pip install -r requirements.txt
-```
-
-## Deployment
-
-The application is deployed on Render. You can access the live website [here](https://deep-learning-modules-website.onrender.com).
-
-## Usage
-
-1. Clone this repository:
+1. Clone the repository:
    ```bash
    git clone https://github.com/slajan01/Deep-Learning-Modules-Website.git
    ```
-
 2. Navigate to the project directory:
    ```bash
    cd Deep-Learning-Modules-Website
    ```
-
-3. Set up a virtual environment (optional but recommended):
+3. Create a virtual environment:
    ```bash
    python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   source .venv/bin/activate  # On Windows, use .venv\Scripts\activate
    ```
-
-4. Install the dependencies:
+4. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-
 5. Run the application:
    ```bash
    flask run
    ```
+6. Open the app in your browser at `http://127.0.0.1:5000`.
 
-6. Open your browser and navigate to `http://127.0.0.1:5000/` to interact with the modules.
+## Deployment
 
-## Contributing
+The application is deployed on [Render](https://render.com). Visit the live application [here](https://deep-learning-modules-website.onrender.com/).
 
-Contributions are welcome! Feel free to open issues or submit pull requests to improve this project.
+## Future Work
+- Add more modules, such as:
+  - Object Detection.
+  - Text Summarization.
+  - Style Transfer.
 
-## License
+Feel free to suggest new ideas or contribute to the project!
 
-This project is licensed under the MIT License.
 
