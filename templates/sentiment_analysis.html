@@ -9,28 +9,23 @@
 <body>
     <div class="container">
         <h1>Sentiment Analysis</h1>
-        <form id="sentiment-form">
-            <textarea id="text-input" placeholder="Enter text here..." rows="5"></textarea>
-            <br>
-            <button type="button" id="analyze-btn">Analyze Sentiment</button>
-        </form>
+        <textarea id="user-input" rows="4" placeholder="Enter your text here..."></textarea>
+        <br>
+        <button id="analyze-btn">Analyze Sentiment</button>
         <p id="result"></p>
     </div>
 
     <script>
         document.getElementById('analyze-btn').addEventListener('click', async () => {
-            const text = document.getElementById('text-input').value;
-            if (!text) {
-                alert("Please enter some text.");
-                return;
-            }
+            const text = document.getElementById('user-input').value;
             const response = await fetch('/sentiment-analysis', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
+                body: JSON.stringify({ text: text })
             });
+
             const result = await response.json();
-            document.getElementById('result').textContent = `Sentiment: ${result.sentiment}`;
+            document.getElementById('result').textContent = `Sentiment: ${result.sentiment} (Confidence: ${result.confidence.toFixed(2)})`;
         });
     </script>
 </body>

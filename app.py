@@ -5,12 +5,15 @@ import numpy as np
 import base64
 import tensorflow as tf
 import cv2
+import pickle
+from tensorflow import keras
 from transformers import pipeline
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from tensorflow.keras.models import load_model
-from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input, decode_predictions
+from tensorflow.keras.utils import text_dataset_from_directory
 from tensorflow.keras.preprocessing import image
 from PIL import Image, ImageOps
 from io import BytesIO
@@ -28,11 +31,12 @@ except Exception as e:
 # Load pre-trained model for image classification
 model = MobileNetV2(weights="imagenet")
 
-# Load the sentiment analysis pipeline
-sentiment_pipeline = pipeline(
-    "sentiment-analysis", 
-    model="distilbert-base-uncased-finetuned-sst-2-english", 
-)
+# Load trained model for sentiment analysis
+sentiment_model = load_model('models/sentiment_model.h5')
+
+# Load the vectorizer from models folder
+with open("models/vectorizer.pkl", "rb") as f:
+    vectorizer = pickle.load(f)
 
 # CUDA related warnings
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -194,22 +198,20 @@ def image_classifier():
 @app.route('/sentiment-analysis', methods=['GET', 'POST'])
 def sentiment_analysis():
     if request.method == 'GET':
-        return render_template('sentiment_analysis.html')
+        return render_template('sentiment_analysis.html')  # Ensure this template exists
 
-    if request.method == 'POST':
-        data = request.get_json()
-        text = data.get('text', '')
+    data = request.get_json()
+    user_input = data.get('text', '')
 
-        if not text:
-            return jsonify({'error': 'No text provided'}), 400
+    if not user_input:
+        return jsonify({'error': 'No text provided'}), 400
 
-        try:
-            # Analyze sentiment
-            results = sentiment_pipeline(text)
-            sentiment = results[0]['label']  # Extract the sentiment label
-            return jsonify({'sentiment': sentiment})
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
+    # Preprocess input
+    vectorized_text = vectorizer([user_input])
+    prediction = sentiment_model.predict(vectorized_text)[0][0]
+    
+    sentiment = "Positive" if prediction > 0.5 else "Negative"
+    return jsonify({'sentiment': sentiment, 'confidence': float(prediction)})
             
 # Main driver
 if __name__ == '__main__':
