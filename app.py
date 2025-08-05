@@ -101,32 +101,38 @@ def chatbot():
     if request.method == 'POST':
         data = request.get_json()
         user_input = data.get('user_input', '')
-        
-        print(f"User Input: {user_input}")  # Debugging: Print user input
+
+        print(f"User Input: {user_input}")
+        print(f"HuggingFace API Key: {HUGGINGFACE_API_KEY[:8]}...")  # Debug
 
         headers = {
             "Authorization": f"Bearer {HUGGINGFACE_API_KEY}",
             "Content-Type": "application/json"
         }
+
         try:
             response = requests.post(
                 "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill",
                 headers=headers,
                 json={"inputs": user_input},
+                timeout=10
             )
 
-            print(f"API Response: {response.json()}")  # Debugging: Print API response
+            json_response = response.json()
+            print(f"API Response: {json_response}")
 
-            if response.status_code == 200:
-                bot_response = response.json()[0].get('generated_text', 'No response generated.')
+            if response.status_code == 200 and isinstance(json_response, list):
+                bot_response = json_response[0].get('generated_text', 'No response generated.')
             else:
-                bot_response = f"Error {response.status_code}: {response.text}"
+                error_msg = json_response.get('error', response.text)
+                bot_response = f"Error {response.status_code}: {error_msg}"
 
         except Exception as e:
             print(f"Exception occurred: {e}")
             bot_response = "Sorry, an error occurred while processing your input."
 
         return jsonify({'response': bot_response})
+
     return render_template('chatbot.html')
 
 # Route for the digit recognizer module
