@@ -116,21 +116,23 @@ def chatbot():
                 "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium",
                 headers=headers,
                 json={"inputs": user_input},
-                timeout=10
             )
-
+        
             print(f"Raw response: {response.text}")  # Přidej tohle pro ladění
-
-            if response.status_code == 200 and isinstance(json_response, list):
-                bot_response = json_response[0].get('generated_text', 'No response generated.')
+        
+            if response.status_code == 200:
+                try:
+                    json_response = response.json()
+                    bot_response = json_response.get('generated_text', 'No response generated.')
+                except ValueError:
+                    bot_response = "Error: Invalid JSON response from API."
             else:
-                error_msg = json_response.get('error', response.text)
-                bot_response = f"Error {response.status_code}: {error_msg}"
-
+                bot_response = f"Error {response.status_code}: {response.text}"
+        
         except Exception as e:
             print(f"Exception occurred: {e}")
-            traceback.print_exc()  # <== přidá stack trace do konzole
             bot_response = "Sorry, an error occurred while processing your input."
+
 
         return jsonify({'response': bot_response})
 
