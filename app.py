@@ -119,8 +119,7 @@ def chatbot():
                 timeout=10
             )
 
-            json_response = response.json()
-            print(f"API Response: {json_response}")
+            print(f"Raw response: {response.text}")  # Přidej tohle pro ladění
 
             if response.status_code == 200 and isinstance(json_response, list):
                 bot_response = json_response[0].get('generated_text', 'No response generated.')
