@@ -96,25 +96,6 @@ def home():
 load_dotenv()
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 
-# Route for finding error in chatbot
-@app.route('/test_api')
-def test_api():
-    headers = {
-        "Authorization": f"Bearer {HUGGINGFACE_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    user_input = "Hello, how are you?"
-    try:
-        response = requests.post(
-            "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium",
-            headers=headers,
-            json={"inputs": user_input},
-        )
-
-        return f"Status: {response.status_code}<br>Response: {response.text}"
-    except Exception as e:
-        return f"Exception: {e}"
-
 # Route for the chatbot module
 @app.route('/chatbot', methods=['GET', 'POST'])
 def chatbot():
@@ -132,7 +113,7 @@ def chatbot():
 
         try:
             response = requests.post(
-                "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium",
+                "https://api-inference.huggingface.co/models/microsoft/GODEL-v1_1-base-seq2seq",
                 headers=headers,
                 json={"inputs": user_input},
             )
