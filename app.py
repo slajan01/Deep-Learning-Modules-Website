@@ -6,6 +6,7 @@ import base64
 import tensorflow as tf
 import cv2
 import pickle
+import traceback
 from tensorflow import keras
 from transformers import pipeline
 from flask import Flask, render_template, request, jsonify
@@ -129,6 +130,7 @@ def chatbot():
 
         except Exception as e:
             print(f"Exception occurred: {e}")
+            traceback.print_exc()  # <== přidá stack trace do konzole
             bot_response = "Sorry, an error occurred while processing your input."
 
         return jsonify({'response': bot_response})
