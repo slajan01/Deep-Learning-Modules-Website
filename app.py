@@ -96,25 +96,6 @@ def home():
 load_dotenv()
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 
-@app.route('/test_api')
-def test_api():
-    headers = {
-        "Authorization": f"Bearer {HUGGINGFACE_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    user_input = "Hello, how are you?"
-    try:
-        response = requests.post(
-            "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct",
-            headers=headers,
-            json={"inputs": user_input},
-        )
-
-        return f"Status: {response.status_code}<br>Response: {response.text}"
-    except Exception as e:
-        return f"Exception: {e}"
-
-
 # Route for the chatbot module
 @app.route('/chatbot', methods=['GET', 'POST'])
 def chatbot():
@@ -139,19 +120,16 @@ def chatbot():
         
             print(f"Raw response: {response.text}")  # Přidej tohle pro ladění
         
-            if response.status_code == 200:
-                try:
-                    json_response = response.json()
-                    bot_response = json_response.get('generated_text', 'No response generated.')
-                except ValueError:
-                    bot_response = "Error: Invalid JSON response from API."
-            else:
-                bot_response = f"Error {response.status_code}: {response.text}"
+        if response.status_code == 200:
+            try:
+                json_response = response.json()
+                bot_response = json_response[0].get('generated_text', 'No response generated.')
+            except (ValueError, IndexError, AttributeError):
+                bot_response = "Error: Invalid JSON response from API."
         
         except Exception as e:
             print(f"Exception occurred: {e}")
             bot_response = "Sorry, an error occurred while processing your input."
-
 
         return jsonify({'response': bot_response})
 
