@@ -113,22 +113,24 @@ def chatbot():
 
         try:
             response = requests.post(
-                "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct",
+                "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1",
                 headers=headers,
                 json={"inputs": user_input},
             )
-        
-            print(f"Raw response: {response.text}")  # Přidej tohle pro ladění
-        
+
+            print(f"Raw response: {response.text}")  # Debug log
+
             if response.status_code == 200:
                 try:
                     json_response = response.json()
+                    # Mistral model vrací seznam slovníků
                     bot_response = json_response[0].get('generated_text', 'No response generated.')
-                except (ValueError, IndexError, AttributeError):
+                except (ValueError, IndexError, AttributeError) as e:
+                    print(f"Parsing error: {e}")
                     bot_response = "Error: Invalid JSON response from API."
             else:
                 bot_response = f"Error {response.status_code}: {response.text}"
-        
+
         except Exception as e:
             print(f"Exception occurred: {e}")
             bot_response = "Sorry, an error occurred while processing your input."
