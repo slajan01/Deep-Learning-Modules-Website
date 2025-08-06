@@ -96,6 +96,25 @@ def home():
 load_dotenv()
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 
+@app.route('/test_api')
+def test_api():
+    headers = {
+        "Authorization": f"Bearer {HUGGINGFACE_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    user_input = "Hello, how are you?"
+    try:
+        response = requests.post(
+            "https://api-inference.huggingface.co/models/facebook/blenderbot-3B",
+            headers=headers,
+            json={"inputs": user_input},
+        )
+
+        return f"Status: {response.status_code}<br>Response: {response.text}"
+    except Exception as e:
+        return f"Exception: {e}"
+
+
 # Route for the chatbot module
 @app.route('/chatbot', methods=['GET', 'POST'])
 def chatbot():
