@@ -113,7 +113,7 @@ def chatbot():
 
         try:
             response = requests.post(
-                "https://api-inference.huggingface.co/models/microsoft/GODEL-v1_1-base-seq2seq",
+                "https://api-inference.huggingface.co/models/facebook/blenderbot-3B",
                 headers=headers,
                 json={"inputs": user_input},
             )
