@@ -96,6 +96,16 @@ def home():
 load_dotenv()
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 
+@app.route('/test_api')
+def test_api():
+    headers = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
+    r = requests.post(
+        "https://api-inference.huggingface.co/models/HuggingFaceTB/SmolLM2-360M-Instruct",
+        headers=headers,
+        json={"inputs": "Hello!"}
+    )
+    return f"Status {r.status_code}<br>{r.text}"
+
 # Route for the chatbot module
 @app.route('/chatbot', methods=['GET', 'POST'])
 def chatbot():
