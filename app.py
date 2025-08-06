@@ -126,6 +126,8 @@ def chatbot():
                 bot_response = json_response[0].get('generated_text', 'No response generated.')
             except (ValueError, IndexError, AttributeError):
                 bot_response = "Error: Invalid JSON response from API."
+        else:
+            bot_response = f"Error {response.status_code}: {response.text}"
         
         except Exception as e:
             print(f"Exception occurred: {e}")
