@@ -105,7 +105,7 @@ def test_api():
     user_input = "Hello, how are you?"
     try:
         response = requests.post(
-            "https://api-inference.huggingface.co/models/facebook/blenderbot-3B",
+            "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct",
             headers=headers,
             json={"inputs": user_input},
         )
@@ -132,7 +132,7 @@ def chatbot():
 
         try:
             response = requests.post(
-                "https://api-inference.huggingface.co/models/facebook/blenderbot-3B",
+                "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct",
                 headers=headers,
                 json={"inputs": user_input},
             )
