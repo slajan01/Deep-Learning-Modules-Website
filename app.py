@@ -104,36 +104,33 @@ def chatbot():
         user_input = data.get('user_input', '')
 
         print(f"User Input: {user_input}")
-        print(f"HuggingFace API Key: {HUGGINGFACE_API_KEY[:8]}...")  # Debug
+        print(f"HF API Key: {HUGGINGFACE_API_KEY[:8]}...")
 
-        headers = {
-            "Authorization": f"Bearer {HUGGINGFACE_API_KEY}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
 
         try:
             response = requests.post(
-                "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1",
+                "https://api-inference.huggingface.co/models/HuggingFaceTB/SmolLM2-360M-Instruct",
                 headers=headers,
                 json={"inputs": user_input},
+                timeout=30
             )
-
-            print(f"Raw response: {response.text}")  # Debug log
+            print("Status code:", response.status_code)
+            print("Response text:", response.text)
 
             if response.status_code == 200:
                 try:
                     json_response = response.json()
-                    # Mistral model vrací seznam slovníků
                     bot_response = json_response[0].get('generated_text', 'No response generated.')
-                except (ValueError, IndexError, AttributeError) as e:
-                    print(f"Parsing error: {e}")
-                    bot_response = "Error: Invalid JSON response from API."
+                except Exception as e:
+                    print("JSON parse error:", e)
+                    bot_response = "Error: Invalid JSON response."
             else:
                 bot_response = f"Error {response.status_code}: {response.text}"
 
         except Exception as e:
-            print(f"Exception occurred: {e}")
-            bot_response = "Sorry, an error occurred while processing your input."
+            print("Exception occurred:", e)
+            bot_response = "Sorry, error while processing."
 
         return jsonify({'response': bot_response})
 
