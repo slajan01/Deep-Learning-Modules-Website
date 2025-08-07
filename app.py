@@ -98,13 +98,19 @@ HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 
 @app.route('/test_api')
 def test_api():
+    # URL pro malý a spolehlivý model
+    model_url = "https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english"
+    
     headers = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
-    r = requests.post(
-        "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
-        headers=headers,
-        json={"inputs": "Hello!"}
-    )
-    return f"Status {r.status_code}<br>{r.text}"
+    
+    # Tento model očekává jiný formát vstupu
+    payload = {"inputs": "I love using the Hugging Face API!"}
+    
+    r = requests.post(model_url, headers=headers, json=payload)
+    
+    # Přidejme si pro jistotu i hlavičky odpovědi pro ladění
+    response_headers = "".join([f"<li>{k}: {v}</li>" for k, v in r.headers.items()])
+    return f"Status: {r.status_code}<br>Text: {r.text}<br><br>Headers:<ul>{response_headers}</ul>"
 
 # Route for the chatbot module
 @app.route('/chatbot', methods=['GET', 'POST'])
