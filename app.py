@@ -100,7 +100,7 @@ HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
 def test_api():
     headers = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
     r = requests.post(
-        "https://api-inference.huggingface.co/models/HuggingFaceTB/SmolLM2-360M-Instruct",
+        "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
         headers=headers,
         json={"inputs": "Hello!"}
     )
@@ -113,34 +113,38 @@ def chatbot():
         data = request.get_json()
         user_input = data.get('user_input', '')
 
-        print(f"User Input: {user_input}")
-        print(f"HF API Key: {HUGGINGFACE_API_KEY[:8]}...")
+        print(f"Přijatý vstup: {user_input}")
+        
+        if not HUGGINGFACE_API_KEY:
+            print("Chyba: HUGGINGFACE_API_KEY není nastaven!")
+            return jsonify({'response': 'Chyba serveru: Chybí API klíč.'}), 500
 
         headers = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
+        model_url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2" # Použij ověřený model
 
         try:
             response = requests.post(
-                "https://api-inference.huggingface.co/models/HuggingFaceTB/SmolLM2-360M-Instruct",
+                model_url,
                 headers=headers,
                 json={"inputs": user_input},
                 timeout=30
             )
-            print("Status code:", response.status_code)
-            print("Response text:", response.text)
+            
+            # Logování odpovědi od Hugging Face
+            print(f"Hugging Face API Status: {response.status_code}")
+            print(f"Hugging Face API Body: {response.text[:200]}") # Vypiš jen prvních 200 znaků
 
-            if response.status_code == 200:
-                try:
-                    json_response = response.json()
-                    bot_response = json_response[0].get('generated_text', 'No response generated.')
-                except Exception as e:
-                    print("JSON parse error:", e)
-                    bot_response = "Error: Invalid JSON response."
-            else:
-                bot_response = f"Error {response.status_code}: {response.text}"
+            response.raise_for_status()  # Toto vyvolá výjimku pro chybové kódy (4xx nebo 5xx)
 
+            json_response = response.json()
+            bot_response = json_response[0].get('generated_text', 'Žádná odpověď z modelu.')
+
+        except requests.exceptions.HTTPError as e:
+            bot_response = f"Chyba API: {e}"
+        except requests.exceptions.RequestException as e:
+            bot_response = f"Chyba sítě: {e}"
         except Exception as e:
-            print("Exception occurred:", e)
-            bot_response = "Sorry, error while processing."
+            bot_response = f"Nastala neočekávaná chyba: {e}"
 
         return jsonify({'response': bot_response})
 
