@@ -92,11 +92,11 @@ def preprocess_image(image_data):
 def home():
     return render_template('home.html')
 
-# Add your Hugging Face API key here
-load_dotenv()
-HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+# --- ZMĚNA: Přepnutí na model Gemma-2B-IT ---
+# Model URL pro konverzační model Gemma-2B-IT od Googlu
+MODEL_URL = "https://api-inference.huggingface.co/models/google/gemma-2b-it" 
+# --- KONEC ZMĚNY ---
 
-# Route for the chatbot module
 @app.route('/chatbot', methods=['GET', 'POST'])
 def chatbot():
     if request.method == 'POST':
@@ -110,11 +110,11 @@ def chatbot():
             return jsonify({'response': 'Chyba serveru: Chybí API klíč.'}), 500
 
         headers = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
-        model_url = "https://api-inference.huggingface.co/models/distilbert/distilbert-base-uncased-finetuned-sst-2-english" # Použij ověřený model
 
         try:
+            # V payloadu posíláme text, stejně jako dříve
             response = requests.post(
-                model_url,
+                MODEL_URL,
                 headers=headers,
                 json={"inputs": user_input},
                 timeout=30
@@ -127,24 +127,22 @@ def chatbot():
 
             json_response = response.json()
             
-            # --- ZDE JE ZMĚNA ---
-            # Odpověď je seznam v seznamu, proto přistupujeme k [0][0]
-            result_dict = json_response[0][0] 
-            
-            label = result_dict.get('label', 'Neznámý label')
-            score = result_dict.get('score', 0)
-            
-            # Vytvoříme srozumitelnou odpověď, protože tento model negeneruje text
-            bot_response = f"Výsledek analýzy sentimentu: {label} (Skóre: {score:.2f})"
+            # --- ZMĚNA: Zpracování odpovědi konverzačního modelu ---
+            # Gemma vrací seznam, kde každý prvek je slovník s klíčem 'generated_text'
+            if json_response and isinstance(json_response, list) and 'generated_text' in json_response[0]:
+                generated_text = json_response[0]['generated_text']
+                
+                # Model často vrací i původní dotaz, takže ho z odpovědi odstraníme
+                bot_response = generated_text.replace(user_input, '', 1).strip()
+            else:
+                # Pokud odpověď není v očekávaném formátu
+                bot_response = "Chyba při zpracování odpovědi od modelu."
             # --- KONEC ZMĚNY ---
 
         except requests.exceptions.HTTPError as e:
             bot_response = f"Chyba API: {e}"
         except requests.exceptions.RequestException as e:
             bot_response = f"Chyba sítě: {e}"
-        except (IndexError, TypeError, KeyError) as e:
-            # Přidáváme specifické odchytávání chyb pro zpracování JSON
-            bot_response = f"Chyba při zpracování odpovědi: {e}. Přijatá data: {json_response}"
         except Exception as e:
             bot_response = f"Nastala neočekávaná chyba: {e}"
 
