@@ -120,19 +120,31 @@ def chatbot():
                 timeout=30
             )
             
-            # Logování odpovědi od Hugging Face
             print(f"Hugging Face API Status: {response.status_code}")
-            print(f"Hugging Face API Body: {response.text[:200]}") # Vypiš jen prvních 200 znaků
+            print(f"Hugging Face API Body: {response.text[:200]}")
 
-            response.raise_for_status()  # Toto vyvolá výjimku pro chybové kódy (4xx nebo 5xx)
+            response.raise_for_status() 
 
             json_response = response.json()
-            bot_response = json_response[0].get('generated_text', 'Žádná odpověď z modelu.')
+            
+            # --- ZDE JE ZMĚNA ---
+            # Odpověď je seznam v seznamu, proto přistupujeme k [0][0]
+            result_dict = json_response[0][0] 
+            
+            label = result_dict.get('label', 'Neznámý label')
+            score = result_dict.get('score', 0)
+            
+            # Vytvoříme srozumitelnou odpověď, protože tento model negeneruje text
+            bot_response = f"Výsledek analýzy sentimentu: {label} (Skóre: {score:.2f})"
+            # --- KONEC ZMĚNY ---
 
         except requests.exceptions.HTTPError as e:
             bot_response = f"Chyba API: {e}"
         except requests.exceptions.RequestException as e:
             bot_response = f"Chyba sítě: {e}"
+        except (IndexError, TypeError, KeyError) as e:
+            # Přidáváme specifické odchytávání chyb pro zpracování JSON
+            bot_response = f"Chyba při zpracování odpovědi: {e}. Přijatá data: {json_response}"
         except Exception as e:
             bot_response = f"Nastala neočekávaná chyba: {e}"
 
