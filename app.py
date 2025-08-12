@@ -108,6 +108,7 @@ def chatbot():
             result = generator(
                 user_input,
                 max_length=150,
+                truncation=True,
                 num_return_sequences=1
             )
             bot_response = result[0]['generated_text']
