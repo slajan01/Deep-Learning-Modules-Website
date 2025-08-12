@@ -8,7 +8,7 @@ import cv2
 import pickle
 import traceback
 from tensorflow import keras
-from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
+from transformers import pipeline, TFAutoModelForCausalLM, AutoTokenizer
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from tensorflow.keras.models import load_model
@@ -24,7 +24,9 @@ app = Flask(__name__)
 
 # --- Načtení lokálního modelu DialoGPT při startu ---
 dialogpt_tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-medium")
-dialogpt_model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
+dialogpt_model = TFAutoModelForCausalLM.from_pretrained(
+    "microsoft/DialoGPT-medium", from_pt=True  # konverze z PyTorch -> TensorFlow
+)
 
 # Load the model for digit recognizer
 try:
