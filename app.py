@@ -22,11 +22,9 @@ from io import BytesIO
 # Initializing Flask application
 app = Flask(__name__)
 
-# --- Načtení lokálního modelu DialoGPT při startu ---
-dialogpt_tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-medium")
-dialogpt_model = TFAutoModelForCausalLM.from_pretrained(
-    "microsoft/DialoGPT-medium", from_pt=True  # konverze z PyTorch -> TensorFlow
-)
+# --- Načtení lokálního modelu při startu ---
+tokenizer = AutoTokenizer.from_pretrained("gpt2")
+model = TFAutoModelForCausalLM.from_pretrained("gpt2")
 
 # Load the model for digit recognizer
 try:
@@ -100,42 +98,20 @@ def home():
 
 @app.route('/chatbot', methods=['GET', 'POST'])
 def chatbot():
-    global conversation_history
-
     if request.method == 'POST':
-        try:
-            data = request.get_json()
-            user_input = data.get('user_input', '')
+        data = request.get_json()
+        user_input = data.get('user_input', '')
 
-            if not user_input:
-                return jsonify({'response': 'Chybí vstupní text.'}), 400
+        print(f"User Input: {user_input}")
 
-            # Přidáme uživatelský vstup do historie
-            conversation_history.append(dialogpt_tokenizer.encode(user_input + dialogpt_tokenizer.eos_token, return_tensors="pt"))
+        # Tokenizace vstupu
+        inputs = tokenizer.encode(user_input, return_tensors="tf")
 
-            # Spojíme historii do jednoho vstupu
-            input_ids = torch.cat(conversation_history, dim=-1)
+        # Generování odpovědi
+        outputs = model.generate(inputs, max_length=150, pad_token_id=tokenizer.eos_token_id)
+        bot_response = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-            # Generování odpovědi
-            chat_history_ids = dialogpt_model.generate(
-                input_ids,
-                max_length=1000,
-                pad_token_id=dialogpt_tokenizer.eos_token_id
-            )
-
-            # Přidáme odpověď do historie
-            conversation_history.append(chat_history_ids[:, input_ids.shape[-1]:])
-
-            # Dekódování poslední odpovědi
-            output_text = dialogpt_tokenizer.decode(
-                chat_history_ids[:, input_ids.shape[-1]:][0],
-                skip_special_tokens=True
-            )
-
-            return jsonify({'response': output_text})
-
-        except Exception as e:
-            return jsonify({'response': f"Chyba: {str(e)}"}), 500
+        return jsonify({'response': bot_response})
 
     return render_template('chatbot.html')
 
