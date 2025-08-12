@@ -23,8 +23,8 @@ from io import BytesIO
 app = Flask(__name__)
 
 # --- Načtení lokálního modelu při startu ---
-tokenizer = AutoTokenizer.from_pretrained("DialoGPT-small")
-model = TFAutoModelForCausalLM.from_pretrained("DialoGPT-small")
+tokenizer = AutoTokenizer.from_pretrained("sshleifer/tiny-gpt2")
+model = TFAutoModelForCausalLM.from_pretrained("sshleifer/tiny-gpt2")
 
 # Load the model for digit recognizer
 try:
