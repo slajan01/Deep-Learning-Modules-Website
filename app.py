@@ -22,9 +22,11 @@ from io import BytesIO
 # Initializing Flask application
 app = Flask(__name__)
 
-# --- Načtení lokálního modelu při startu ---
-tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neo-125m")
-model = TFAutoModelForCausalLM.from_pretrained("EleutherAI/gpt-neo-125m")
+# Inicializace malého a rychlého modelu pro text generation
+generator = pipeline(
+    "text-generation",
+    model="sshleifer/tiny-gpt2"  # velmi malý GPT-2 pro testy
+)
 
 # Load the model for digit recognizer
 try:
@@ -102,14 +104,15 @@ def chatbot():
         data = request.get_json()
         user_input = data.get('user_input', '')
 
-        print(f"User Input: {user_input}")
-
-        # Tokenizace vstupu
-        inputs = tokenizer.encode(user_input, return_tensors="tf")
-
-        # Generování odpovědi
-        outputs = model.generate(inputs, max_length=150, pad_token_id=tokenizer.eos_token_id)
-        bot_response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        try:
+            result = generator(
+                user_input,
+                max_length=150,
+                num_return_sequences=1
+            )
+            bot_response = result[0]['generated_text']
+        except Exception as e:
+            bot_response = f"Chyba při generování: {e}"
 
         return jsonify({'response': bot_response})
 
