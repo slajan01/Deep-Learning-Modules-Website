@@ -8,7 +8,7 @@ import cv2
 import pickle
 import traceback
 from tensorflow import keras
-from transformers import pipeline
+from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 from tensorflow.keras.models import load_model
@@ -21,6 +21,10 @@ from io import BytesIO
 
 # Initializing Flask application
 app = Flask(__name__)
+
+# --- Načtení lokálního modelu DialoGPT při startu ---
+dialogpt_tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-medium")
+dialogpt_model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
 
 # Load the model for digit recognizer
 try:
@@ -92,61 +96,44 @@ def preprocess_image(image_data):
 def home():
     return render_template('home.html')
 
-# --- ZMĚNA: Přepnutí na model Gemma-2B-IT ---
-# Model URL pro konverzační model Gemma-2B-IT od Googlu
-MODEL_URL = "https://api-inference.huggingface.co/models/google/gemma-2b-it" 
-# --- KONEC ZMĚNY ---
-
 @app.route('/chatbot', methods=['GET', 'POST'])
 def chatbot():
+    global conversation_history
+
     if request.method == 'POST':
-        data = request.get_json()
-        user_input = data.get('user_input', '')
-
-        print(f"Přijatý vstup: {user_input}")
-        
-        if not HUGGINGFACE_API_KEY:
-            print("Chyba: HUGGINGFACE_API_KEY není nastaven!")
-            return jsonify({'response': 'Chyba serveru: Chybí API klíč.'}), 500
-
-        headers = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
-
         try:
-            # V payloadu posíláme text, stejně jako dříve
-            response = requests.post(
-                MODEL_URL,
-                headers=headers,
-                json={"inputs": user_input},
-                timeout=30
+            data = request.get_json()
+            user_input = data.get('user_input', '')
+
+            if not user_input:
+                return jsonify({'response': 'Chybí vstupní text.'}), 400
+
+            # Přidáme uživatelský vstup do historie
+            conversation_history.append(dialogpt_tokenizer.encode(user_input + dialogpt_tokenizer.eos_token, return_tensors="pt"))
+
+            # Spojíme historii do jednoho vstupu
+            input_ids = torch.cat(conversation_history, dim=-1)
+
+            # Generování odpovědi
+            chat_history_ids = dialogpt_model.generate(
+                input_ids,
+                max_length=1000,
+                pad_token_id=dialogpt_tokenizer.eos_token_id
             )
-            
-            print(f"Hugging Face API Status: {response.status_code}")
-            print(f"Hugging Face API Body: {response.text[:200]}")
 
-            response.raise_for_status() 
+            # Přidáme odpověď do historie
+            conversation_history.append(chat_history_ids[:, input_ids.shape[-1]:])
 
-            json_response = response.json()
-            
-            # --- ZMĚNA: Zpracování odpovědi konverzačního modelu ---
-            # Gemma vrací seznam, kde každý prvek je slovník s klíčem 'generated_text'
-            if json_response and isinstance(json_response, list) and 'generated_text' in json_response[0]:
-                generated_text = json_response[0]['generated_text']
-                
-                # Model často vrací i původní dotaz, takže ho z odpovědi odstraníme
-                bot_response = generated_text.replace(user_input, '', 1).strip()
-            else:
-                # Pokud odpověď není v očekávaném formátu
-                bot_response = "Chyba při zpracování odpovědi od modelu."
-            # --- KONEC ZMĚNY ---
+            # Dekódování poslední odpovědi
+            output_text = dialogpt_tokenizer.decode(
+                chat_history_ids[:, input_ids.shape[-1]:][0],
+                skip_special_tokens=True
+            )
 
-        except requests.exceptions.HTTPError as e:
-            bot_response = f"Chyba API: {e}"
-        except requests.exceptions.RequestException as e:
-            bot_response = f"Chyba sítě: {e}"
+            return jsonify({'response': output_text})
+
         except Exception as e:
-            bot_response = f"Nastala neočekávaná chyba: {e}"
-
-        return jsonify({'response': bot_response})
+            return jsonify({'response': f"Chyba: {str(e)}"}), 500
 
     return render_template('chatbot.html')
 
