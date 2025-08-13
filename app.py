@@ -22,12 +22,6 @@ from io import BytesIO
 # Initializing Flask application
 app = Flask(__name__)
 
-# Inicializace malého a rychlého modelu pro text generation
-generator = pipeline(
-    "text-generation",
-    model="sshleifer/tiny-gpt2"  # velmi malý GPT-2 pro testy
-)
-
 # Load the model for digit recognizer
 try:
     cnn_model = load_model('models/digit_recognizer.h5')
@@ -44,6 +38,9 @@ sentiment_model = load_model('models/sentiment_model.h5')
 # Load the vectorizer from models folder
 with open("models/vectorizer.pkl", "rb") as f:
     vectorizer = pickle.load(f)
+
+load_dotenv()
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # CUDA related warnings
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -104,16 +101,34 @@ def chatbot():
         data = request.get_json()
         user_input = data.get('user_input', '')
 
+        headers = {
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": "llama3-8b-8192",
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": user_input}
+            ],
+            "temperature": 0.7,
+            "max_tokens": 200
+        }
+
         try:
-            result = generator(
-                user_input,
-                max_length=150,
-                truncation=True,
-                num_return_sequences=1
+            response = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers=headers,
+                json=payload
             )
-            bot_response = result[0]['generated_text']
+            if response.status_code == 200:
+                bot_response = response.json()['choices'][0]['message']['content']
+            else:
+                bot_response = f"Error {response.status_code}: {response.text}"
+
         except Exception as e:
-            bot_response = f"Chyba při generování: {e}"
+            bot_response = f"Error: {str(e)}"
 
         return jsonify({'response': bot_response})
 
